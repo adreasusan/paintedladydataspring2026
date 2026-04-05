@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Larval Observation Log</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2416;
+    --paper: #f5f0e8;
+    --moss: #3a6b47;
+    --moss-light: #d4e8d8;
+    --moss-mid: #6fa37d;
+    --amber: #c8843a;
+    --amber-light: #f5e6d3;
+    --red: #c0392b;
+    --rule: #c8bfad;
+    --mono: 'DM Mono', monospace;
+    --serif: 'Fraunces', Georgia, serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--mono); background: var(--paper); color: var(--ink); min-height: 100vh; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(var(--rule) 1px, transparent 1px), linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 32px 32px; opacity: 0.18; pointer-events: none; z-index: 0;
+  }
+  .page { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 40px 24px 80px; }
+
+  .header { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 36px; }
+  .header-top { display: flex; align-items: flex-start; gap: 16px; }
+  .hmark { font-size: 42px; line-height: 1; flex-shrink: 0; }
+  .header-text h1 { font-family: var(--serif); font-weight: 600; font-size: 1.7rem; line-height: 1.1; color: var(--moss); }
+  .header-text .sub { font-size: 11px; color: #666; margin-top: 5px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .nav-links { margin-top: 10px; font-size: 11px; display: flex; gap: 14px; }
+  .nav-links a { color: var(--moss); text-decoration: none; }
+  .nav-links a:hover { text-decoration: underline; }
+
+  .status-bar { margin-top: 14px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #666; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+  .status-dot.ok { background: var(--moss-mid); }
+  .status-dot.err { background: var(--red); }
+  .status-dot.warn { background: var(--amber); }
+
+  .setup-banner { background: var(--amber-light); border: 1px solid var(--amber); border-left: 4px solid var(--amber); border-radius: 6px; padding: 14px 16px; font-size: 12px; line-height: 1.6; margin-bottom: 28px; display: none; }
+  .setup-banner.visible { display: block; }
+  .setup-banner strong { color: var(--amber); }
+  .setup-banner a { color: var(--moss); }
+
+  .section-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--moss); font-weight: 500; margin-bottom: 12px; padding-bottom: 5px; border-bottom: 1px solid var(--moss-light); }
+  .form-card { background: white; border: 1px solid var(--rule); border-radius: 8px; padding: 22px 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.span2 { grid-column: span 2; }
+  .field.span3 { grid-column: span 3; }
+
+  label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #777; font-weight: 500; }
+  label .req { color: var(--amber); margin-left: 2px; }
+  .calc-note { font-size: 10px; color: var(--moss-mid); font-style: italic; margin-top: 2px; }
+
+  input, select, textarea { font-family: var(--mono); font-size: 13px; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 5px; background: var(--paper); color: var(--ink); transition: border-color 0.15s, background 0.15s; width: 100%; }
+  input:focus, select:focus { outline: none; border-color: var(--moss); background: white; }
+  input.err, select.err { border-color: var(--red); }
+  input[readonly] { background: #f0f0f0; cursor: not-allowed; color: #888; }
+
+  .avg-display { background: var(--moss-light); border: 1px solid var(--moss); border-radius: 5px; padding: 8px 10px; font-size: 13px; color: var(--moss); font-weight: 500; min-height: 36px; display: flex; align-items: center; }
+
+  .cat-table-wrap { overflow-x: auto; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { background: var(--moss-light); color: var(--moss); padding: 7px 10px; text-align: left; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; border-bottom: 2px solid var(--moss); }
+  tbody tr:nth-child(even) td { background: #fafaf7; }
+  tbody td { padding: 5px 6px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  tbody td:first-child { color: #999; font-size: 11px; text-align: center; width: 36px; }
+  tbody td input { padding: 5px 7px; font-size: 12px; width: 90px; }
+
+  .btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 8px; }
+  .btn { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; padding: 10px 22px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: var(--moss); color: white; }
+  .btn-primary:hover { background: #2a5035; }
+  .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+  .btn-secondary { background: transparent; color: var(--moss); border: 1px solid var(--moss); }
+  .btn-secondary:hover { background: var(--moss-light); }
+  .btn-ghost { background: transparent; color: #999; border: 1px solid var(--rule); padding: 6px 14px; font-size: 11px; }
+  .btn-ghost:hover { border-color: #999; color: var(--ink); }
+
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ink); color: white; padding: 12px 22px; border-radius: 6px; font-size: 13px; z-index: 100; transition: transform 0.3s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--moss); }
+  .toast.error { background: var(--red); }
+
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 10px; max-width: 660px; width: 100%; max-height: 88vh; overflow-y: auto; padding: 28px 30px; font-size: 13px; line-height: 1.6; }
+  .modal h2 { font-family: var(--serif); font-size: 1.3rem; color: var(--moss); margin-bottom: 16px; }
+  .modal h3 { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--moss); margin: 18px 0 8px; padding-bottom: 4px; border-bottom: 1px solid var(--moss-light); }
+  .modal p { margin-bottom: 10px; color: #444; }
+  .step { display: flex; gap: 12px; margin-bottom: 12px; align-items: flex-start; }
+  .step-num { background: var(--moss); color: white; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; margin-top: 1px; }
+  .step-text { color: #444; }
+  .code-block { background: #1a2416; color: #a8d5ba; border-radius: 6px; padding: 14px 16px; font-size: 11px; white-space: pre; overflow-x: auto; margin: 10px 0; line-height: 1.5; }
+  .url-input-wrap { display: flex; gap: 8px; margin-top: 10px; }
+  .url-input-wrap input { flex: 1; font-size: 12px; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 540px) {
+    .field-grid { grid-template-columns: 1fr; }
+    .field-grid.three { grid-template-columns: 1fr 1fr; }
+    .field.span2, .field.span3 { grid-column: span 1; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="header-top">
+      <div class="hmark">🐛</div>
+      <div class="header-text">
+        <h1>Larval Observation Log</h1>
+        <div class="sub">Vanessa cardui &nbsp;·&nbsp; Evolutionary Biology &nbsp;·&nbsp; Spring 2026</div>
+        <div class="nav-links">
+          <a href="eclosion_form.html">🦋 Switch to Eclosion Log</a>
+          <a href="dashboard.html">📊 Dashboard</a>
+        </div>
+      </div>
+    </div>
+    <div class="status-bar">
+      <span class="status-dot" id="sdot"></span>
+      <span id="stxt">Not connected</span>
+      <span style="margin-left:auto"><button class="btn btn-ghost" onclick="openSetup()">⚙ Setup</button></span>
+    </div>
+  </div>
+
+  <div class="setup-banner" id="setup-banner">
+    <strong>⚠ Not connected.</strong> Data will be saved locally only.
+    <a href="#" onclick="openSetup(); return false;">Click Setup</a> to connect to Google.
+  </div>
+
+  <!-- Section 1: Container Info -->
+  <div class="form-card">
+    <div class="section-label">Container Info</div>
+    <div class="field-grid three">
+      <div class="field">
+        <label>Today's Date <span class="req">*</span></label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="field">
+        <label>Date Hatched <span class="req">*</span></label>
+        <input type="date" id="f-hatched">
+      </div>
+      <div class="field">
+        <label>Container # <span class="req">*</span></label>
+        <input type="text" id="f-container" placeholder="e.g. A1">
+      </div>
+      <div class="field">
+        <label>Campus <span class="req">*</span></label>
+        <select id="f-campus">
+          <option value="">-- select --</option>
+          <option>Oceanside</option>
+          <option>San Elijo</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Temperature <span class="req">*</span></label>
+        <select id="f-temp">
+          <option value="">-- select --</option>
+          <option value="25">25°C</option>
+          <option value="30">30°C</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Diet <span class="req">*</span></label>
+        <select id="f-diet">
+          <option value="">-- select --</option>
+          <option>Southland</option>
+          <option>Wards</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Total Caterpillars <span class="req">*</span></label>
+        <input type="number" id="f-total" min="1" max="30" placeholder="e.g. 10" oninput="updateTable()">
+      </div>
+      <div class="field">
+        <label>Living Caterpillars <span class="req">*</span></label>
+        <input type="number" id="f-alive" min="0" placeholder="e.g. 9">
+      </div>
+      <div class="field">
+        <label>Deaths Since Last Obs.</label>
+        <input type="number" id="f-deaths" min="0" placeholder="0">
+      </div>
+      <div class="field">
+        <label>New Pupations</label>
+        <input type="number" id="f-pupations" min="0" placeholder="0">
+      </div>
+      <div class="field">
+        <label>Avg Pupa Length (mm)</label>
+        <input type="number" id="f-pupa-len" step="0.1" min="0" placeholder="0.0">
+      </div>
+      <div class="field">
+        <label>Observer(s)</label>
+        <input type="text" id="f-observers" placeholder="e.g. JD, SM">
+      </div>
+      <div class="field span3">
+        <label>Notes</label>
+        <input type="text" id="f-notes" placeholder="Any observations…">
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: Individual Measurements -->
+  <div class="form-card" id="cat-card">
+    <div class="section-label">Individual Caterpillar Measurements</div>
+    <div class="cat-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Length (mm)</th>
+            <th>Width (mm)</th>
+          </tr>
+        </thead>
+        <tbody id="cat-tbody"></tbody>
+      </table>
+    </div>
+    <div class="btn-row" style="margin-top:14px">
+      <button class="btn btn-ghost" onclick="addRow()">+ Add row</button>
+      <button class="btn btn-ghost" onclick="removeLastRow()">− Remove last</button>
+    </div>
+
+    <!-- Auto-calculated averages -->
+    <div class="field-grid" style="margin-top:16px">
+      <div class="field">
+        <label>Avg Length (mm) — auto-calculated</label>
+        <div class="avg-display" id="avg-len">—</div>
+      </div>
+      <div class="field">
+        <label>Avg Width (mm) — auto-calculated</label>
+        <div class="avg-display" id="avg-wid">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Submit -->
+  <div class="form-card">
+    <div class="section-label">Submit</div>
+    <p style="font-size:11px;color:#888;margin-bottom:14px">Submitting will write to the per-container Drive workbook <strong>and</strong> append a summary row to the centralized class sheet.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="submit-btn" onclick="submitForm()">Save Observation</button>
+      <button class="btn btn-secondary" onclick="clearForm()">Clear form</button>
+    </div>
+    <div style="font-size:11px;color:#999;margin-top:10px" id="local-note"></div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- Setup Modal -->
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeSetup()">
+  <div class="modal">
+    <h2>Connect to Google</h2>
+    <p>One Apps Script handles both writes — to the per-container Drive folder and to the centralized class sheet. Deploy it once and paste the URL into both forms.</p>
+
+    <h3>Step 1 — Create a Drive folder for container logs</h3>
+    <div class="step"><div class="step-num">1</div><div class="step-text">Go to <a href="https://drive.google.com" target="_blank">drive.google.com</a>, create a folder called <strong>"Butterfly Container Logs Spring 2026"</strong>. Copy the ID from the URL (the string after <code>/folders/</code>).</div></div>
+
+    <h3>Step 2 — Get your centralized sheet ID</h3>
+    <div class="step"><div class="step-num">2</div><div class="step-text">Open your centralized class Google Sheet. Copy the ID from the URL (the string between <code>/d/</code> and <code>/edit</code>).</div></div>
+
+    <h3>Step 3 — Create a standalone Apps Script</h3>
+    <div class="step"><div class="step-num">3</div><div class="step-text">Go to <a href="https://script.google.com" target="_blank">script.google.com</a>, click <strong>New project</strong>, delete any existing code, and paste the script below.</div></div>
+
+    <h3>Step 4 — Paste this script</h3>
+    <div class="code-block" id="script-code">const FOLDER_ID       = 'YOUR_FOLDER_ID_HERE';
+const CENTRAL_SHEET_ID = 'YOUR_CENTRAL_SHEET_ID_HERE';
+const LARVAL_TAB       = 'Larval growth and development';
+const ECLOSION_TAB     = 'Eclosions';
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    if (data.type === 'eclosion') {
+      return writeEclosion(data);
+    } else {
+      return writeLarval(data);
+    }
+  } catch(err) {
+    return ContentService
+      .createTextOutput(JSON.stringify({success: false, error: err.toString()}))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+// ── Larval: write to container workbook + centralized sheet ───────────────
+function writeLarval(data) {
+  // 1. Per-container Drive workbook
+  const folder = DriveApp.getFolderById(FOLDER_ID);
+  const fileName = 'Container ' + data.container;
+  let ss;
+  const files = folder.getFilesByName(fileName);
+  if (files.hasNext()) {
+    ss = SpreadsheetApp.open(files.next());
+  } else {
+    ss = SpreadsheetApp.create(fileName);
+    DriveApp.getFileById(ss.getId()).moveTo(folder);
+  }
+
+  // One tab per observation date
+  let sheet = ss.getSheetByName(data.date);
+  if (!sheet) {
+    sheet = ss.insertSheet(data.date);
+    const def = ss.getSheetByName('Sheet1');
+    if (def && def.getLastRow() === 0) ss.deleteSheet(def);
+  }
+
+  // Header block (matches template)
+  sheet.getRange(1,1).setValue("Today's Date:");   sheet.getRange(1,2).setValue(data.date);
+  sheet.getRange(1,3).setValue("Diet:");            sheet.getRange(1,4).setValue(data.diet);
+  sheet.getRange(1,5).setValue("Temperature:");     sheet.getRange(1,6).setValue(data.temp + "°C");
+  sheet.getRange(2,1).setValue("Date hatched:");    sheet.getRange(2,2).setValue(data.hatched);
+  sheet.getRange(2,3).setValue("No. caterpillars:");sheet.getRange(2,4).setValue(data.total);
+  sheet.getRange(2,5).setValue("Observers:");       sheet.getRange(2,6).setValue(data.observers);
+  sheet.getRange(3,1).setValue("Container:");       sheet.getRange(3,2).setValue(data.container);
+  sheet.getRange(3,3).setValue("No. living:");      sheet.getRange(3,4).setValue(data.alive);
+  sheet.getRange(3,5).setValue("Campus:");          sheet.getRange(3,6).setValue(data.campus);
+
+  // Measurement headers row 4
+  sheet.getRange(4,1).setValue("Caterpillar length");
+  sheet.getRange(4,2).setValue("Caterpillar width");
+  sheet.getRange(4,1,1,2).setFontWeight('bold').setBackground('#d4e8d8');
+
+  // Individual rows
+  if (data.caterpillars && data.caterpillars.length > 0) {
+    const rows = data.caterpillars.map(c => [c.length || '', c.width || '']);
+    sheet.getRange(5, 1, rows.length, 2).setValues(rows);
+  }
+  sheet.autoResizeColumns(1, 6);
+
+  // 2. Centralized class sheet — append summary row
+  const central = SpreadsheetApp.openById(CENTRAL_SHEET_ID);
+  let larvalSheet = central.getSheetByName(LARVAL_TAB);
+  if (!larvalSheet) larvalSheet = central.insertSheet(LARVAL_TAB);
+
+  // Add header row if sheet is empty
+  if (larvalSheet.getLastRow() === 0) {
+    larvalSheet.appendRow([
+      'Date','Campus','Temperature','Diet','Cup_ID',
+      'Alive','Deaths','New_Pupations',
+      'Avg_Length_mm','Avg_Width_mm','Avg_Pupa_Length_mm',
+      'Observer','Notes'
+    ]);
+    larvalSheet.getRange(1,1,1,13).setFontWeight('bold').setBackground('#d4e8d8');
+  }
+
+  larvalSheet.appendRow([
+    data.date, data.campus, data.temp, data.diet, data.container,
+    data.alive, data.deaths, data.pupations,
+    data.avgLen, data.avgWid, data.pupaLen,
+    data.observers, data.notes
+  ]);
+
+  return ContentService
+    .createTextOutput(JSON.stringify({success: true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── Eclosion: write to centralized sheet Eclosions tab ──────────────────
+function writeEclosion(data) {
+  const central = SpreadsheetApp.openById(CENTRAL_SHEET_ID);
+  let sheet = central.getSheetByName(ECLOSION_TAB);
+  if (!sheet) sheet = central.insertSheet(ECLOSION_TAB);
+
+  if (sheet.getLastRow() === 0) {
+    sheet.appendRow([
+      'Date','Campus','Temperature','Diet',
+      'Eclosed_Today','Cumulative_Eclosed',
+      'Total_Pupated','Cumulative_Percent',
+      'Observer','Notes'
+    ]);
+    sheet.getRange(1,1,1,10).setFontWeight('bold').setBackground('#ede9fe');
+  }
+
+  sheet.appendRow([
+    data.date, data.campus, data.temp, data.diet,
+    data.eclosedToday, data.cumulativeEclosed,
+    data.totalPupated, data.cumulativePercent,
+    data.observer, data.notes
+  ]);
+
+  return ContentService
+    .createTextOutput(JSON.stringify({success: true}))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  return ContentService
+    .createTextOutput(JSON.stringify({status: 'ok'}))
+    .setMimeType(ContentService.MimeType.JSON);
+}</div>
+
+    <h3>Step 5 — Set your IDs</h3>
+    <div class="step"><div class="step-num">5</div><div class="step-text">Replace <code>YOUR_FOLDER_ID_HERE</code> and <code>YOUR_CENTRAL_SHEET_ID_HERE</code> with the IDs you copied in Steps 1 and 2.</div></div>
+
+    <h3>Step 6 — Deploy</h3>
+    <div class="step"><div class="step-num">6</div><div class="step-text">Click <strong>Deploy → New deployment</strong>. Type: <strong>Web app</strong>. Execute as: <strong>Me</strong>. Access: <strong>Anyone</strong>. Click Deploy and authorize when prompted (grant Drive + Sheets access).</div></div>
+    <div class="step"><div class="step-num">7</div><div class="step-text">Copy the <strong>Web app URL</strong> and paste it below. Use the same URL in the eclosion form.</div></div>
+
+    <h3>Paste your Apps Script URL</h3>
+    <div class="url-input-wrap">
+      <input type="url" id="script-url" placeholder="https://script.google.com/macros/s/…">
+      <button class="btn btn-primary" onclick="saveScriptUrl()">Save</button>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="testConnection()">Test connection</button>
+      <button class="btn btn-ghost" onclick="copyScript()">Copy script</button>
+      <button class="btn btn-ghost" style="margin-left:auto" onclick="closeSetup()">Close</button>
+    </div>
+    <div id="test-result" style="font-size:12px;margin-top:10px;color:#666"></div>
+  </div>
+</div>
+
+<script>
+let scriptUrl = localStorage.getItem('bf_script_url') || '';
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('script-url').value = scriptUrl;
+  document.getElementById('f-total').value = 10;
+  initRows(10);
+  updateStatus();
+});
+
+function updateStatus() {
+  const dot = document.getElementById('sdot');
+  const txt = document.getElementById('stxt');
+  const banner = document.getElementById('setup-banner');
+  if (scriptUrl) {
+    dot.className = 'status-dot ok';
+    txt.textContent = 'Connected — ' + scriptUrl.slice(0, 55) + '…';
+    banner.classList.remove('visible');
+  } else {
+    dot.className = 'status-dot warn';
+    txt.textContent = 'Not connected — click Setup';
+    banner.classList.add('visible');
+  }
+}
+
+// ── Table ──────────────────────────────────────────────────────────────────
+function initRows(n) {
+  document.getElementById('cat-tbody').innerHTML = '';
+  for (let i = 1; i <= n; i++) addRow(i);
+  calcAverages();
+}
+
+function updateTable() {
+  const n = parseInt(document.getElementById('f-total').value) || 0;
+  const tbody = document.getElementById('cat-tbody');
+  const existing = tbody.querySelectorAll('tr').length;
+  if (n > existing) for (let i = existing + 1; i <= n; i++) addRow(i);
+  else if (n < existing) {
+    const rows = tbody.querySelectorAll('tr');
+    for (let i = existing; i > n; i--) rows[i-1].remove();
+  }
+  renumberRows();
+  calcAverages();
+}
+
+function addRow(num) {
+  const tbody = document.getElementById('cat-tbody');
+  const n = num || tbody.querySelectorAll('tr').length + 1;
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td class="row-num">${n}</td>
+    <td><input type="number" step="0.1" min="0" placeholder="—" oninput="calcAverages()"></td>
+    <td><input type="number" step="0.1" min="0" placeholder="—" oninput="calcAverages()"></td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function removeLastRow() {
+  const tbody = document.getElementById('cat-tbody');
+  const rows = tbody.querySelectorAll('tr');
+  if (rows.length > 1) {
+    rows[rows.length-1].remove();
+    document.getElementById('f-total').value = tbody.querySelectorAll('tr').length;
+    calcAverages();
+  }
+}
+
+function renumberRows() {
+  document.querySelectorAll('#cat-tbody tr').forEach((r, i) => {
+    const c = r.querySelector('.row-num');
+    if (c) c.textContent = i + 1;
+  });
+}
+
+function calcAverages() {
+  const rows = document.querySelectorAll('#cat-tbody tr');
+  const lens = [], wids = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    const l = parseFloat(inputs[0]?.value);
+    const w = parseFloat(inputs[1]?.value);
+    if (!isNaN(l) && l > 0) lens.push(l);
+    if (!isNaN(w) && w > 0) wids.push(w);
+  });
+  const avgL = lens.length ? (lens.reduce((a,b)=>a+b,0)/lens.length).toFixed(2) : '—';
+  const avgW = wids.length ? (wids.reduce((a,b)=>a+b,0)/wids.length).toFixed(2) : '—';
+  document.getElementById('avg-len').textContent = avgL !== '—' ? avgL + ' mm' : '—';
+  document.getElementById('avg-wid').textContent = avgW !== '—' ? avgW + ' mm' : '—';
+  return { avgL: avgL !== '—' ? avgL : '', avgW: avgW !== '—' ? avgW : '' };
+}
+
+// ── Validation & data collection ───────────────────────────────────────────
+function validate() {
+  const required = ['f-date','f-hatched','f-container','f-campus','f-temp','f-diet','f-total','f-alive'];
+  let ok = true;
+  required.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el.value) { el.classList.add('err'); ok = false; }
+    else el.classList.remove('err');
+  });
+  return ok;
+}
+
+function collectData() {
+  const { avgL, avgW } = calcAverages();
+  const rows = document.querySelectorAll('#cat-tbody tr');
+  const caterpillars = [];
+  rows.forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    caterpillars.push({ length: inputs[0]?.value || '', width: inputs[1]?.value || '' });
+  });
+  return {
+    type: 'larval',
+    date: document.getElementById('f-date').value,
+    hatched: document.getElementById('f-hatched').value,
+    container: document.getElementById('f-container').value.trim().toUpperCase(),
+    campus: document.getElementById('f-campus').value,
+    temp: document.getElementById('f-temp').value,
+    diet: document.getElementById('f-diet').value,
+    total: document.getElementById('f-total').value,
+    alive: document.getElementById('f-alive').value,
+    deaths: document.getElementById('f-deaths').value || 0,
+    pupations: document.getElementById('f-pupations').value || 0,
+    pupaLen: document.getElementById('f-pupa-len').value || '',
+    observers: document.getElementById('f-observers').value,
+    notes: document.getElementById('f-notes').value,
+    avgLen: avgL,
+    avgWid: avgW,
+    caterpillars,
+  };
+}
+
+function clearForm() {
+  ['f-date','f-hatched','f-container','f-campus','f-temp','f-diet',
+   'f-total','f-alive','f-deaths','f-pupations','f-pupa-len','f-observers','f-notes']
+    .forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-total').value = 10;
+  initRows(10);
+  document.getElementById('local-note').textContent = '';
+}
+
+// ── Submit ─────────────────────────────────────────────────────────────────
+async function submitForm() {
+  if (!validate()) { showToast('Please fill in all required fields', 'error'); return; }
+  const data = collectData();
+
+  const local = JSON.parse(localStorage.getItem('bf_larval_local') || '[]');
+  local.push(data);
+  localStorage.setItem('bf_larval_local', JSON.stringify(local));
+
+  if (!scriptUrl) {
+    showToast('Saved locally (not connected)', 'success');
+    document.getElementById('local-note').textContent =
+      `Saved locally. ${local.length} observation(s) in browser. Connect via Setup to sync.`;
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving…';
+
+  try {
+    const resp = await fetch(scriptUrl, { method: 'POST', body: JSON.stringify(data) });
+    const result = await resp.json();
+    if (result.success) {
+      showToast('✓ Saved to Google Drive + class sheet!', 'success');
+      clearForm();
+    } else throw new Error(result.error || 'Unknown error');
+  } catch (err) {
+    showToast('Error — saved locally as backup', 'error');
+    document.getElementById('local-note').textContent = 'Could not reach Google. Data saved locally.';
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Observation';
+  }
+}
+
+// ── Setup modal ────────────────────────────────────────────────────────────
+function openSetup() { document.getElementById('modal-bg').classList.add('open'); document.getElementById('script-url').value = scriptUrl; }
+function closeSetup() { document.getElementById('modal-bg').classList.remove('open'); }
+function saveScriptUrl() {
+  const url = document.getElementById('script-url').value.trim();
+  if (!url.startsWith('https://script.google.com')) { document.getElementById('test-result').textContent = '⚠ Doesn\'t look like an Apps Script URL.'; return; }
+  scriptUrl = url; localStorage.setItem('bf_script_url', url); updateStatus();
+  document.getElementById('test-result').textContent = '✓ URL saved.';
+}
+async function testConnection() {
+  const url = document.getElementById('script-url').value.trim();
+  if (!url) { document.getElementById('test-result').textContent = 'Paste a URL first.'; return; }
+  document.getElementById('test-result').textContent = 'Testing…';
+  try {
+    const r = await fetch(url); const j = await r.json();
+    document.getElementById('test-result').textContent = j.status === 'ok' ? '✓ Connection successful!' : '⚠ Unexpected response.';
+  } catch { document.getElementById('test-result').textContent = '✗ Could not connect. Check URL and deployment settings.'; }
+}
+function copyScript() { navigator.clipboard.writeText(document.getElementById('script-code').textContent); showToast('Script copied!', 'success'); }
+
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + type;
+  setTimeout(() => t.className = 'toast', 3500);
+}
+</script>
+</body>
+</html>
