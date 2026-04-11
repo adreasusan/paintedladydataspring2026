@@ -344,15 +344,25 @@ function writeLarval(data) {
   const central = SpreadsheetApp.openById(CENTRAL_SHEET_ID);
   let larvalSheet = central.getSheetByName(LARVAL_TAB);
   if (!larvalSheet) larvalSheet = central.insertSheet(LARVAL_TAB);
+      const totalStartedSheet = central.getSheetByName('Total_Started');
+const totalStartedData = totalStartedSheet.getDataRange().getValues();
+let totalStarted = '';
+for (let i = 1; i < totalStartedData.length; i++) {
+  if (totalStartedData[i][0] === data.container) {
+    totalStarted = totalStartedData[i][1];
+    break;
+  }
+}
 
   // Add header row if sheet is empty
   if (larvalSheet.getLastRow() === 0) {
   larvalSheet.appendRow([
-  'Date','Campus','Temperature','Diet','Cup_ID',
-  'Hatch_Date',
-  'Alive','Deaths','New_Pupations',
-  'Avg_Length_mm','Avg_Width_mm','Avg_Pupa_Length_mm',
-  'Observer','Notes'
+  data.date, data.campus, data.temp, data.diet, data.container,
+  data.hatched,
+  data.alive, data.deaths, data.pupations,
+  data.avgLen, data.avgWid, data.pupaLen,
+  data.observers, data.notes,
+  totalStarted
 ]);
     larvalSheet.getRange(1,1,1,13).setFontWeight('bold').setBackground('#d4e8d8');
   }
