@@ -15,7 +15,7 @@
     --amber: #c8843a;
     --amber-light: #f5e6d3;
     --red: #c0392b;
-    --rule: #c8bfad;
+    --rule: #c8bfad;https://public.tableau.com/app/profile/adrea.gonzalez.karlsson/viz/PaintedLadyDataSpring2026/Dashboard1l
     --mono: 'DM Mono', monospace;
     --serif: 'Fraunces', Georgia, serif;
   }
@@ -347,21 +347,23 @@ function writeLarval(data) {
 
   // Add header row if sheet is empty
   if (larvalSheet.getLastRow() === 0) {
-    larvalSheet.appendRow([
-      'Date','Campus','Temperature','Diet','Cup_ID',
-      'Alive','Deaths','New_Pupations',
-      'Avg_Length_mm','Avg_Width_mm','Avg_Pupa_Length_mm',
-      'Observer','Notes'
-    ]);
+  larvalSheet.appendRow([
+  'Date','Campus','Temperature','Diet','Cup_ID',
+  'Hatch_Date',
+  'Alive','Deaths','New_Pupations',
+  'Avg_Length_mm','Avg_Width_mm','Avg_Pupa_Length_mm',
+  'Observer','Notes'
+]);
     larvalSheet.getRange(1,1,1,13).setFontWeight('bold').setBackground('#d4e8d8');
   }
 
-  larvalSheet.appendRow([
-    data.date, data.campus, data.temp, data.diet, data.container,
-    data.alive, data.deaths, data.pupations,
-    data.avgLen, data.avgWid, data.pupaLen,
-    data.observers, data.notes
-  ]);
+larvalSheet.appendRow([
+  data.date, data.campus, data.temp, data.diet, data.container,
+  data.hatched,
+  data.alive, data.deaths, data.pupations,
+  data.avgLen, data.avgWid, data.pupaLen,
+  data.observers, data.notes
+]);
 
   return ContentService
     .createTextOutput(JSON.stringify({success: true}))
