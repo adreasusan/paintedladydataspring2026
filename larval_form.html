@@ -551,7 +551,7 @@ function collectData() {
     type: 'larval',
     date: document.getElementById('f-date').value,
     hatched: document.getElementById('f-hatched').value,
-    container: document.getElementById('f-container').value.trim().toUpperCase(),
+container: 'CURE' + document.getElementById('f-container').value.trim().toUpperCase().replace(/^CURE/, '').replace(/\s/g, ''),
     campus: document.getElementById('f-campus').value,
     temp: document.getElementById('f-temp').value,
     diet: document.getElementById('f-diet').value,
