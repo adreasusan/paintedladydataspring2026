@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eclosion Log</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2416; --paper: #f5f0e8; --moss: #3a6b47; --moss-light: #d4e8d8;
+    --moss-mid: #6fa37d; --amber: #c8843a; --amber-light: #f5e6d3;
+    --red: #c0392b; --rule: #c8bfad; --purple: #5b21b6; --purple-light: #ede9fe;
+    --mono: 'DM Mono', monospace; --serif: 'Fraunces', Georgia, serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--mono); background: var(--paper); color: var(--ink); min-height: 100vh; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(var(--rule) 1px, transparent 1px), linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 32px 32px; opacity: 0.18; pointer-events: none; z-index: 0;
+  }
+  .page { position: relative; z-index: 1; max-width: 760px; margin: 0 auto; padding: 40px 24px 80px; }
+  .header { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 36px; }
+  .header-top { display: flex; align-items: flex-start; gap: 16px; }
+  .hmark { font-size: 42px; line-height: 1; flex-shrink: 0; }
+  .header-text h1 { font-family: var(--serif); font-weight: 600; font-size: 1.7rem; line-height: 1.1; color: var(--purple); }
+  .header-text .sub { font-size: 11px; color: #666; margin-top: 5px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .nav-links { margin-top: 10px; font-size: 11px; display: flex; gap: 14px; }
+  .nav-links a { color: var(--moss); text-decoration: none; }
+  .nav-links a:hover { text-decoration: underline; }
+  .status-bar { margin-top: 14px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #666; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+  .status-dot.ok { background: var(--moss-mid); }
+  .status-dot.warn { background: var(--amber); }
+  .status-dot.err { background: var(--red); }
+  .setup-banner { background: var(--amber-light); border: 1px solid var(--amber); border-left: 4px solid var(--amber); border-radius: 6px; padding: 14px 16px; font-size: 12px; line-height: 1.6; margin-bottom: 28px; display: none; }
+  .setup-banner.visible { display: block; }
+  .setup-banner strong { color: var(--amber); }
+  .setup-banner a { color: var(--moss); }
+  .section-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--purple); font-weight: 500; margin-bottom: 12px; padding-bottom: 5px; border-bottom: 1px solid var(--purple-light); }
+  .form-card { background: white; border: 1px solid var(--rule); border-radius: 8px; padding: 22px 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.span2 { grid-column: span 2; }
+  .field.span3 { grid-column: span 3; }
+  label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #777; font-weight: 500; }
+  label .req { color: var(--amber); margin-left: 2px; }
+  input, select { font-family: var(--mono); font-size: 13px; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 5px; background: var(--paper); color: var(--ink); transition: border-color 0.15s; width: 100%; }
+  input:focus, select:focus { outline: none; border-color: var(--purple); background: white; }
+  input.err, select.err { border-color: var(--red); }
+  .treatment-section { background: white; border: 1px solid var(--rule); border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); overflow: hidden; }
+  .treatment-header { display: flex; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--rule); }
+  .row-count { font-size: 11px; color: #999; margin-left: auto; }
+  .tc-badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; font-weight: 600; }
+  .tc-25s { background: #dbeafe; color: #1e40af; }
+  .tc-25w { background: #dcfce7; color: #166534; }
+  .tc-30s { background: #fee2e2; color: #991b1b; }
+  .tc-30w { background: #fef3c7; color: #92400e; }
+  .treatment-body { padding: 16px 20px; }
+  .pupa-table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { background: var(--purple-light); color: var(--purple); padding: 7px 10px; text-align: left; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; border-bottom: 2px solid var(--purple); }
+  tbody tr:nth-child(even) td { background: #fafaf7; }
+  tbody td { padding: 4px 6px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  tbody td:first-child { color: #999; font-size: 11px; text-align: center; width: 32px; }
+  tbody td input[type="date"] { font-size: 11px; padding: 4px 6px; min-width: 130px; }
+  tbody td input[type="text"] { font-size: 11px; padding: 4px 6px; }
+  .container-input { min-width: 90px; }
+  .notes-input { min-width: 160px; }
+  .btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .btn { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.04em; padding: 10px 22px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: var(--purple); color: white; }
+  .btn-primary:hover { background: #4c1d95; }
+  .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+  .btn-secondary { background: transparent; color: var(--purple); border: 1px solid var(--purple); }
+  .btn-secondary:hover { background: var(--purple-light); }
+  .btn-ghost { background: transparent; color: #999; border: 1px solid var(--rule); padding: 6px 14px; font-size: 11px; }
+  .btn-ghost:hover { border-color: #999; color: var(--ink); }
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ink); color: white; padding: 12px 22px; border-radius: 6px; font-size: 13px; z-index: 100; transition: transform 0.3s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--moss); }
+  .toast.error { background: var(--red); }
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 10px; max-width: 580px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 28px 30px; font-size: 13px; line-height: 1.6; }
+  .modal h2 { font-family: var(--serif); font-size: 1.3rem; color: var(--purple); margin-bottom: 12px; }
+  .modal p { color: #444; margin-bottom: 10px; }
+  .url-input-wrap { display: flex; gap: 8px; margin-top: 10px; }
+  .url-input-wrap input { flex: 1; font-size: 12px; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 540px) {
+    .field-grid, .field-grid.three { grid-template-columns: 1fr; }
+    .field.span2, .field.span3 { grid-column: span 1; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="header-top">
+      <div class="hmark">🦋</div>
+      <div class="header-text">
+        <h1>Eclosion Log</h1>
+        <div class="sub">Vanessa cardui &nbsp;·&nbsp; Evolutionary Biology &nbsp;·&nbsp; Spring 2026</div>
+        <div class="nav-links">
+          <a href="larval_form.html">🐛 Switch to Larval Log</a>
+          <a href="dashboard.html">📊 Dashboard</a>
+        </div>
+      </div>
+    </div>
+    <div class="status-bar">
+      <span class="status-dot" id="sdot"></span>
+      <span id="stxt">Not connected</span>
+      <span style="margin-left:auto"><button class="btn btn-ghost" onclick="openSetup()">⚙ Setup</button></span>
+    </div>
+  </div>
+
+  <div class="setup-banner" id="setup-banner">
+    <strong>⚠ Not connected.</strong> Data will be saved locally only.
+    <a href="#" onclick="openSetup(); return false;">Click Setup</a> to connect. Use the same Apps Script URL as the larval form.
+  </div>
+
+  <!-- Session Info -->
+  <div class="form-card">
+    <div class="section-label">Session Info</div>
+    <div class="field-grid three">
+      <div class="field">
+        <label>Date Eclosed <span class="req">*</span></label>
+        <input type="date" id="f-date">
+      </div>
+      <div class="field">
+        <label>Campus <span class="req">*</span></label>
+        <select id="f-campus">
+          <option value="">-- select --</option>
+          <option>Oceanside</option>
+          <option>San Elijo</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Observer(s)</label>
+        <input type="text" id="f-observer" placeholder="e.g. JD, SM">
+      </div>
+
+    </div>
+  </div>
+
+  <!-- 25C Southland -->
+  <div class="treatment-section">
+    <div class="treatment-header">
+      <span class="tc-badge tc-25s">25°C · Southland</span>
+      <span class="row-count" id="count-25s">0 eclosions entered</span>
+    </div>
+    <div class="treatment-body">
+      <div class="pupa-table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Date Pupated</th><th>Container #</th><th>Notes</th></tr></thead>
+          <tbody id="tbody-25s"></tbody>
+        </table>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="addRow('25s')">+ Add row</button>
+        <button class="btn btn-ghost" onclick="removeRow('25s')">− Remove last</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 25C Wards -->
+  <div class="treatment-section">
+    <div class="treatment-header">
+      <span class="tc-badge tc-25w">25°C · Wards</span>
+      <span class="row-count" id="count-25w">0 eclosions entered</span>
+    </div>
+    <div class="treatment-body">
+      <div class="pupa-table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Date Pupated</th><th>Container #</th><th>Notes</th></tr></thead>
+          <tbody id="tbody-25w"></tbody>
+        </table>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="addRow('25w')">+ Add row</button>
+        <button class="btn btn-ghost" onclick="removeRow('25w')">− Remove last</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 30C Southland -->
+  <div class="treatment-section">
+    <div class="treatment-header">
+      <span class="tc-badge tc-30s">30°C · Southland</span>
+      <span class="row-count" id="count-30s">0 eclosions entered</span>
+    </div>
+    <div class="treatment-body">
+      <div class="pupa-table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Date Pupated</th><th>Container #</th><th>Notes</th></tr></thead>
+          <tbody id="tbody-30s"></tbody>
+        </table>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="addRow('30s')">+ Add row</button>
+        <button class="btn btn-ghost" onclick="removeRow('30s')">− Remove last</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 30C Wards -->
+  <div class="treatment-section">
+    <div class="treatment-header">
+      <span class="tc-badge tc-30w">30°C · Wards</span>
+      <span class="row-count" id="count-30w">0 eclosions entered</span>
+    </div>
+    <div class="treatment-body">
+      <div class="pupa-table-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Date Pupated</th><th>Container #</th><th>Notes</th></tr></thead>
+          <tbody id="tbody-30w"></tbody>
+        </table>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-ghost" onclick="addRow('30w')">+ Add row</button>
+        <button class="btn btn-ghost" onclick="removeRow('30w')">− Remove last</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Submit -->
+  <div class="form-card">
+    <div class="section-label">Submit</div>
+    <p style="font-size:11px;color:#888;margin-bottom:14px">Each filled row will be written as a separate entry to the <strong>Eclosions</strong> tab. Empty rows are ignored.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="submit-btn" onclick="submitForm()">Save Eclosion Data</button>
+      <button class="btn btn-secondary" onclick="clearForm()">Clear form</button>
+    </div>
+    <div style="font-size:11px;color:#999;margin-top:10px" id="local-note"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeSetup()">
+  <div class="modal">
+    <h2>Connect to Google Sheets</h2>
+    <p>Use the <strong>same Apps Script URL</strong> as the larval form.</p>
+    <p>If you have not set up the Apps Script yet, open the larval form Setup panel for full instructions.</p>
+    <h3 style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--purple);margin:16px 0 8px;padding-bottom:4px;border-bottom:1px solid var(--purple-light)">Paste your Apps Script URL</h3>
+    <div class="url-input-wrap">
+      <input type="url" id="script-url" placeholder="https://script.google.com/macros/s/...">
+      <button class="btn btn-primary" onclick="saveScriptUrl()">Save</button>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn btn-ghost" onclick="testConnection()">Test connection</button>
+      <button class="btn btn-ghost" style="margin-left:auto" onclick="closeSetup()">Close</button>
+    </div>
+    <div id="test-result" style="font-size:12px;margin-top:10px;color:#666"></div>
+  </div>
+</div>
+
+<script>
+const TREATMENTS = [
+  { key: '25s', temp: '25', diet: 'Southland' },
+  { key: '25w', temp: '25', diet: 'Wards' },
+  { key: '30s', temp: '30', diet: 'Southland' },
+  { key: '30w', temp: '30', diet: 'Wards' },
+];
+
+let scriptUrl = localStorage.getItem('bf_script_url') || 'https://script.google.com/macros/s/AKfycbzg2LcG51v-TQbBKcHO0qzyCd6Y9LgRhwNL9KK7VpeHSh_-P6hRRaAFdjZcJvnIK5O37A/exec';
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('script-url').value = scriptUrl;
+  TREATMENTS.forEach(t => initRows(t.key, 10));
+  updateStatus();
+});
+
+function updateStatus() {
+  const dot = document.getElementById('sdot');
+  const txt = document.getElementById('stxt');
+  const banner = document.getElementById('setup-banner');
+  if (scriptUrl) {
+    dot.className = 'status-dot ok';
+    txt.textContent = 'Connected — ' + scriptUrl.slice(0, 55) + '...';
+    banner.classList.remove('visible');
+  } else {
+    dot.className = 'status-dot warn';
+    txt.textContent = 'Not connected — click Setup';
+    banner.classList.add('visible');
+  }
+}
+
+function initRows(key, n) {
+  document.getElementById('tbody-' + key).innerHTML = '';
+  for (let i = 1; i <= n; i++) addRow(key, i);
+  updateCount(key);
+}
+
+function addRow(key, num) {
+  const tbody = document.getElementById('tbody-' + key);
+  const n = num || tbody.querySelectorAll('tr').length + 1;
+  const today = new Date().toISOString().split('T')[0];
+  const tr = document.createElement('tr');
+  tr.innerHTML =
+    '<td class="row-num">' + n + '</td>' +
+    '<td><input type="date" value="' + today + '" oninput="updateCount(\'' + key + '\')"></td>' +
+    '<td><input type="text" class="container-input" placeholder="e.g. CURE99" oninput="updateCount(\'' + key + '\')" onblur="fixContainer(this)"></td>' +
+    '<td><input type="text" class="notes-input" placeholder="optional"></td>';
+  tbody.appendChild(tr);
+  updateCount(key);
+}
+
+function fixContainer(input) {
+  const val = input.value.trim().toUpperCase().replace(/^CURE/i, '').replace(/\s/g, '');
+  if (val) input.value = 'CURE' + val;
+}
+
+function removeRow(key) {
+  const tbody = document.getElementById('tbody-' + key);
+  const rows = tbody.querySelectorAll('tr');
+  if (rows.length > 1) { rows[rows.length - 1].remove(); updateCount(key); }
+}
+
+function updateCount(key) {
+  const tbody = document.getElementById('tbody-' + key);
+  let filled = 0;
+  tbody.querySelectorAll('tr').forEach(row => {
+    const inputs = row.querySelectorAll('input');
+    if (inputs[0]?.value && inputs[1]?.value) filled++;
+  });
+  const el = document.getElementById('count-' + key);
+  el.textContent = filled === 0 ? '0 eclosions entered' : filled === 1 ? '1 eclosion entered' : filled + ' eclosions entered';
+}
+
+function collectRows() {
+  const dateEclosed = document.getElementById('f-date').value;
+  const campus = document.getElementById('f-campus').value;
+  const observer = document.getElementById('f-observer').value;
+  const rows = [];
+  TREATMENTS.forEach(t => {
+    document.getElementById('tbody-' + t.key).querySelectorAll('tr').forEach(row => {
+      const inputs = row.querySelectorAll('input');
+      const datePupated = inputs[0]?.value;
+      const raw = (inputs[1]?.value || '').trim().toUpperCase().replace(/^CURE/i, '').replace(/\s/g, '');
+      const container = raw ? 'CURE' + raw : '';      const rowNotes = inputs[2]?.value || '';
+      if (datePupated && container) {
+        rows.push({ type: 'eclosion', dateEclosed, datePupated, campus, temp: t.temp, diet: t.diet, container, observer, rowNotes });
+      }
+    });
+  });
+  return rows;
+}
+
+function validate() {
+  let ok = true;
+  ['f-date', 'f-campus'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el.value) { el.classList.add('err'); ok = false; } else el.classList.remove('err');
+  });
+  if (!ok) return false;
+  if (collectRows().length === 0) { showToast('Please enter at least one eclosion', 'error'); return false; }
+  return true;
+}
+
+function clearForm() {
+  document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('f-campus').value = '';
+  document.getElementById('f-observer').value = '';
+  TREATMENTS.forEach(t => initRows(t.key, 10));
+  document.getElementById('local-note').textContent = '';
+}
+
+async function submitForm() {
+  if (!validate()) return;
+  const rows = collectRows();
+  const local = JSON.parse(localStorage.getItem('bf_eclosion_local') || '[]');
+  rows.forEach(r => local.push(r));
+  localStorage.setItem('bf_eclosion_local', JSON.stringify(local));
+  if (!scriptUrl) {
+    showToast('Saved ' + rows.length + ' eclosion(s) locally', 'success');
+    document.getElementById('local-note').textContent = rows.length + ' eclosion(s) saved locally. Connect via Setup to sync.';
+    return;
+  }
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving...';
+  try {
+    for (const row of rows) {
+      const resp = await fetch(scriptUrl, { method: 'POST', body: JSON.stringify(row) });
+      const result = await resp.json();
+      if (!result.success) throw new Error(result.error || 'Unknown error');
+    }
+    showToast('✓ ' + rows.length + ' eclosion(s) saved to class sheet!', 'success');
+    clearForm();
+  } catch (err) {
+    showToast('Error — saved locally as backup', 'error');
+    document.getElementById('local-note').textContent = 'Could not reach Google. Data saved locally.';
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Eclosion Data';
+  }
+}
+
+function openSetup() { document.getElementById('modal-bg').classList.add('open'); document.getElementById('script-url').value = scriptUrl; }
+function closeSetup() { document.getElementById('modal-bg').classList.remove('open'); }
+function saveScriptUrl() {
+  const url = document.getElementById('script-url').value.trim();
+  if (!url.startsWith('https://script.google.com')) { document.getElementById('test-result').textContent = 'Does not look like an Apps Script URL.'; return; }
+  scriptUrl = url; localStorage.setItem('bf_script_url', url); updateStatus();
+  document.getElementById('test-result').textContent = 'URL saved.';
+}
+async function testConnection() {
+  const url = document.getElementById('script-url').value.trim();
+  if (!url) { document.getElementById('test-result').textContent = 'Paste a URL first.'; return; }
+  document.getElementById('test-result').textContent = 'Testing...';
+  try {
+    const r = await fetch(url); const j = await r.json();
+    document.getElementById('test-result').textContent = j.status === 'ok' ? 'Connection successful!' : 'Unexpected response.';
+  } catch { document.getElementById('test-result').textContent = 'Could not connect. Check URL and deployment settings.'; }
+}
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast show ' + (type || '');
+  setTimeout(() => t.className = 'toast', 3500);
+}
+</script>
+</body>
+</html>
