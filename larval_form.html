@@ -599,12 +599,7 @@ async function submitForm() {
   btn.innerHTML = '<span class="spinner"></span>Saving…';
 
   try {
-    const resp = await fetch(scriptUrl, { method: 'POST', body: JSON.stringify(data) });
-    const result = await resp.json();
-    if (result.success) {
-      showToast('✓ Saved to Google Drive + class sheet!', 'success');
-      clearForm();
-    } else throw new Error(result.error || 'Unknown error');
+await fetch(scriptUrl, { method: 'POST', body: JSON.stringify(row), mode: 'no-cors' });
   } catch (err) {
     showToast('Error — saved locally as backup', 'error');
     document.getElementById('local-note').textContent = 'Could not reach Google. Data saved locally.';
