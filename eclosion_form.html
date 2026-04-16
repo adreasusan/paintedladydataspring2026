@@ -353,7 +353,9 @@ async function submitForm() {
   btn.innerHTML = '<span class="spinner"></span>Saving...';
   try {
     for (var j = 0; j < rows.length; j++) {
-      await fetch(scriptUrl, { method: 'POST', mode: 'no-cors', body: JSON.stringify(rows[j]) });
+      var resp = await fetch(scriptUrl, { method: 'POST', body: JSON.stringify(rows[j]) });
+      var result = await resp.json();
+      if (!result.success) throw new Error(result.error || 'Unknown error');
     }
     showToast('Saved ' + rows.length + ' eclosion(s)!', 'success');
     clearForm();
