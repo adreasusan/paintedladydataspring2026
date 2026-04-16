@@ -283,11 +283,7 @@ const ECLOSION_TAB     = 'Eclosions';
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
-    if (data.type === 'eclosion') {
-      return writeEclosion(data);
-    } else {
-      return writeLarval(data);
-    }
+    return writeLarval(data);
   } catch(err) {
     return ContentService
       .createTextOutput(JSON.stringify({success: false, error: err.toString()}))
