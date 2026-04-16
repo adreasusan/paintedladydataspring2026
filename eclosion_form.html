@@ -201,7 +201,7 @@
 
 <script>
 var HARDCODED_URL = 'https://script.google.com/macros/s/AKfycbzg2LcG51v-TQbBKcHO0qzyCd6Y9LgRhwNL9KK7VpeHSh_-P6hRRaAFdjZcJvnIK5O37A/exec';
-var scriptUrl = localStorage.getItem('bf_script_url') || HARDCODED_URL;
+var scriptUrl = localStorage.getItem('bf_eclosion_script_url') || HARDCODED_URL;
 
 window.onload = function() {
   var today = new Date().toISOString().split('T')[0];
@@ -374,7 +374,7 @@ function closeSetup() { document.getElementById('modal-bg').classList.remove('op
 function saveScriptUrl() {
   var url = document.getElementById('script-url').value.trim();
   if (!url.startsWith('https://script.google.com')) { document.getElementById('test-result').textContent = 'Does not look like an Apps Script URL.'; return; }
-  scriptUrl = url; localStorage.setItem('bf_script_url', url); updateStatus();
+  scriptUrl = url; localStorage.setItem('bf_eclosion_script_url', url); updateStatus();
   document.getElementById('test-result').textContent = 'URL saved.';
 }
 
