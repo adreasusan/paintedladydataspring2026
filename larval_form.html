@@ -595,22 +595,21 @@ async function submitForm() {
   btn.innerHTML = '<span class="spinner"></span>Saving…';
 
   try {
-const resp = await fetch(scriptUrl, { method: 'POST', body: JSON.stringify(data) });
-const result = await resp.json();
-if (result.success) {
-  showToast('✓ Saved to Google Drive + class sheet!', 'success');
-  clearForm();
-} else throw new Error(result.error || 'Unknown error');
-} catch (err) {
-  showToast('Error — saved locally as backup', 'error');
-  document.getElementById('local-note').textContent = 'Could not reach Google. Data saved locally.';
-  console.error(err);
-} finally {
-  btn.disabled = false;
-  btn.textContent = 'Save Observation';
+    const resp = await fetch(scriptUrl, { method: 'POST', body: JSON.stringify(data) });
+    const result = await resp.json();
+    if (result.success) {
+      showToast('✓ Saved to Google Drive + class sheet!', 'success');
+      clearForm();
+    } else throw new Error(result.error || 'Unknown error');
+  } catch (err) {
+    showToast('Error — saved locally as backup', 'error');
+    document.getElementById('local-note').textContent = 'Could not reach Google. Data saved locally.';
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Observation';
   }
 }
-
 // ── Setup modal ────────────────────────────────────────────────────────────
 function openSetup() { document.getElementById('modal-bg').classList.add('open'); document.getElementById('script-url').value = scriptUrl; }
 function closeSetup() { document.getElementById('modal-bg').classList.remove('open'); }
