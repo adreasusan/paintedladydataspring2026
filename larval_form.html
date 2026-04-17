@@ -601,18 +601,13 @@ if (result.success) {
   showToast('✓ Saved to Google Drive + class sheet!', 'success');
   clearForm();
 } else throw new Error(result.error || 'Unknown error');
-const result = await resp.json();
-if (result.success) {
-  showToast('✓ Saved to Google Drive + class sheet!', 'success');
-  clearForm();
-} else throw new Error(result.error || 'Unknown error');
-  } catch (err) {
-    showToast('Error — saved locally as backup', 'error');
-    document.getElementById('local-note').textContent = 'Could not reach Google. Data saved locally.';
-    console.error(err);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Save Observation';
+} catch (err) {
+  showToast('Error — saved locally as backup', 'error');
+  document.getElementById('local-note').textContent = 'Could not reach Google. Data saved locally.';
+  console.error(err);
+} finally {
+  btn.disabled = false;
+  btn.textContent = 'Save Observation';
   }
 }
 
