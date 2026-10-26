@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eclosion Log</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,wght@0,300;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a2416; --paper: #f5f0e8; --moss: #3a6b47; --moss-light: #d4e8d8;
+    --moss-mid: #6fa37d; --amber: #c8843a; --amber-light: #f5e6d3;
+    --red: #c0392b; --rule: #c8bfad; --purple: #5b21b6; --purple-light: #ede9fe;
+    --mono: 'DM Mono', monospace; --serif: 'Fraunces', Georgia, serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--mono); background: var(--paper); color: var(--ink); min-height: 100vh; }
+  body::before {
+    content: ''; position: fixed; inset: 0;
+    background-image: linear-gradient(var(--rule) 1px, transparent 1px), linear-gradient(90deg, var(--rule) 1px, transparent 1px);
+    background-size: 32px 32px; opacity: 0.18; pointer-events: none; z-index: 0;
+  }
+  .page { position: relative; z-index: 1; max-width: 700px; margin: 0 auto; padding: 40px 24px 80px; }
+  .header { border-bottom: 2px solid var(--ink); padding-bottom: 20px; margin-bottom: 36px; }
+  .header-top { display: flex; align-items: flex-start; gap: 16px; }
+  .hmark { font-size: 42px; line-height: 1; flex-shrink: 0; }
+  .header-text h1 { font-family: var(--serif); font-weight: 600; font-size: 1.7rem; line-height: 1.1; color: var(--purple); }
+  .header-text .sub { font-size: 11px; color: #666; margin-top: 5px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .nav-links { margin-top: 10px; font-size: 11px; display: flex; gap: 14px; }
+  .nav-links a { color: var(--moss); text-decoration: none; }
+  .nav-links a:hover { text-decoration: underline; }
+  .status-bar { margin-top: 14px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #666; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #ccc; flex-shrink: 0; }
+  .status-dot.ok { background: var(--moss-mid); }
+  .status-dot.warn { background: var(--amber); }
+  .setup-banner { background: var(--amber-light); border: 1px solid var(--amber); border-left: 4px solid var(--amber); border-radius: 6px; padding: 14px 16px; font-size: 12px; line-height: 1.6; margin-bottom: 28px; display: none; }
+  .setup-banner.visible { display: block; }
+  .setup-banner strong { color: var(--amber); }
+  .setup-banner a { color: var(--moss); }
+  .section-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--purple); font-weight: 500; margin-bottom: 12px; padding-bottom: 5px; border-bottom: 1px solid var(--purple-light); }
+  .form-card { background: white; border: 1px solid var(--rule); border-radius: 8px; padding: 22px 24px; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .field-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field.span2 { grid-column: span 2; }
+  label { font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: #777; font-weight: 500; }
+  label .req { color: var(--amber); margin-left: 2px; }
+  input[type="date"], input[type="text"], select { font-family: var(--mono); font-size: 13px; padding: 8px 10px; border: 1px solid var(--rule); border-radius: 5px; background: var(--paper); color: var(--ink); transition: border-color 0.15s; width: 100%; }
+  input:focus, select:focus { outline: none; border-color: var(--purple); background: white; }
+  input.err, select.err { border-color: var(--red); }
+  .table-wrap { overflow-x: auto; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  thead th { background: var(--purple-light); color: var(--purple); padding: 8px 10px; text-align: left; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; border-bottom: 2px solid var(--purple); }
+  tbody tr:nth-child(even) td { background: #fafaf7; }
+  tbody td { padding: 5px 6px; border-bottom: 1px solid #eee; vertical-align: middle; }
+  tbody td input { font-size: 12px; padding: 5px 7px; width: 100%; font-family: var(--mono); border: 1px solid var(--rule); border-radius: 4px; background: var(--paper); }
+  tbody td input:focus { outline: none; border-color: var(--purple); background: white; }
+  .num-cell { width: 32px; color: #999; font-size: 11px; text-align: center; }
+  .date-cell { min-width: 145px; }
+  .cont-cell { min-width: 110px; }
+  .notes-cell { min-width: 160px; }
+  .count-display { font-size: 11px; color: var(--purple); margin-top: 10px; font-style: italic; }
+  .btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 12px; }
+  .btn { font-family: var(--mono); font-size: 12px; font-weight: 500; padding: 10px 22px; border: none; border-radius: 5px; cursor: pointer; transition: all 0.15s; }
+  .btn-primary { background: var(--purple); color: white; }
+  .btn-primary:hover { background: #4c1d95; }
+  .btn-primary:disabled { background: #aaa; cursor: not-allowed; }
+  .btn-secondary { background: transparent; color: var(--purple); border: 1px solid var(--purple); }
+  .btn-secondary:hover { background: var(--purple-light); }
+  .btn-ghost { background: transparent; color: #999; border: 1px solid var(--rule); padding: 6px 14px; font-size: 11px; }
+  .btn-ghost:hover { border-color: #999; color: var(--ink); }
+  .toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--ink); color: white; padding: 12px 22px; border-radius: 6px; font-size: 13px; z-index: 100; transition: transform 0.3s ease; white-space: nowrap; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--moss); }
+  .toast.error { background: var(--red); }
+  .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; align-items: center; justify-content: center; padding: 20px; }
+  .modal-bg.open { display: flex; }
+  .modal { background: white; border-radius: 10px; max-width: 500px; width: 100%; max-height: 85vh; overflow-y: auto; padding: 28px 30px; font-size: 13px; line-height: 1.6; }
+  .modal h2 { font-family: var(--serif); font-size: 1.3rem; color: var(--purple); margin-bottom: 12px; }
+  .modal p { color: #444; margin-bottom: 10px; }
+  .url-input-wrap { display: flex; gap: 8px; margin-top: 10px; }
+  .url-input-wrap input { flex: 1; font-size: 12px; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @media (max-width: 540px) { .field-grid, .field-grid.three { grid-template-columns: 1fr; } .field.span2 { grid-column: span 1; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="header-top">
+      <div class="hmark">🦋</div>
+      <div class="header-text">
+        <h1>Eclosion Log</h1>
+        <div class="sub">Vanessa cardui &nbsp;·&nbsp; Evolutionary Biology &nbsp;·&nbsp; Spring 2026</div>
+        <div class="nav-links">
+          <a href="larval_form.html">🐛 Switch to Larval Log</a>
+          <a href="dashboard.html">📊 Dashboard</a>
+        </div>
+      </div>
+    </div>
+    <div class="status-bar">
+      <span class="status-dot" id="sdot"></span>
+      <span id="stxt">Not connected</span>
+      <span style="margin-left:auto"><button class="btn btn-ghost" onclick="openSetup()">Setup</button></span>
+    </div>
+  </div>
+
+  <div class="setup-banner" id="setup-banner">
+    <strong>Not connected.</strong> Data will be saved locally only.
+    <a href="#" onclick="openSetup(); return false;">Click Setup</a> to connect.
+  </div>
+
+  <div class="form-card">
+    <div class="section-label">Session Info</div>
+    <div class="field-grid three">
+      <div class="field">
+        <label>Date Eclosed <span class="req">*</span></label>
+        <input type="date" id="sess-date">
+      </div>
+      <div class="field">
+        <label>Campus <span class="req">*</span></label>
+        <select id="sess-campus">
+          <option value="">-- select --</option>
+          <option>Oceanside</option>
+          <option>San Elijo</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Temperature <span class="req">*</span></label>
+        <select id="sess-temp">
+          <option value="">-- select --</option>
+          <option value="25">25 degrees C</option>
+          <option value="30">30 degrees C</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Diet <span class="req">*</span></label>
+        <select id="sess-diet">
+          <option value="">-- select --</option>
+          <option>Southland</option>
+          <option>Wards</option>
+        </select>
+      </div>
+      <div class="field span2">
+        <label>Observer(s)</label>
+        <input type="text" id="sess-observer" placeholder="e.g. JD, SM">
+      </div>
+    </div>
+  </div>
+
+  <div class="form-card">
+    <div class="section-label">Individual Eclosions</div>
+    <p style="font-size:11px;color:#888;margin-bottom:12px">One row per butterfly. Empty rows are ignored on submit.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:32px">#</th>
+            <th>Date Pupated</th>
+            <th>Container #</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody id="ecl-tbody"></tbody>
+      </table>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-ghost" onclick="addRow()">+ Add row</button>
+      <button class="btn btn-ghost" onclick="removeLastRow()">- Remove last</button>
+    </div>
+    <div class="count-display" id="row-count">0 eclosions entered</div>
+  </div>
+
+  <div class="form-card">
+    <div class="section-label">Submit</div>
+    <p style="font-size:11px;color:#888;margin-bottom:14px">Each filled row writes one entry to the Eclosions tab.</p>
+    <div class="btn-row">
+      <button class="btn btn-primary" id="submit-btn" onclick="submitForm()">Save Eclosion Data</button>
+      <button class="btn btn-secondary" onclick="clearForm()">Clear form</button>
+    </div>
+    <div style="font-size:11px;color:#999;margin-top:10px" id="local-note"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="modal-bg" id="modal-bg" onclick="if(event.target===this)closeSetup()">
+  <div class="modal">
+    <h2>Connect to Google Sheets</h2>
+    <p>Use the same Apps Script URL as the larval form.</p>
+    <div class="url-input-wrap">
+      <input type="url" id="script-url" placeholder="https://script.google.com/macros/s/...">
+      <button class="btn btn-primary" onclick="saveScriptUrl()">Save</button>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px">
+      <button class="btn btn-ghost" onclick="closeSetup()">Close</button>
+    </div>
+    <div id="test-result" style="font-size:12px;margin-top:10px;color:#666"></div>
+  </div>
+</div>
+
+<script>
+var HARDCODED_URL = 'https://script.google.com/a/macros/miracosta.edu/s/AKfycbyu8Oo0kVrJ4gPgazTVXFwLI0pBL7GuA1Cxv7wiVjucqbSuOXMa7I07skOB5UgedXCJIQ/exec';
+var scriptUrl = localStorage.getItem('bf_eclosion_script_url') || HARDCODED_URL;
+
+window.onload = function() {
+  var today = new Date().toISOString().split('T')[0];
+  document.getElementById('sess-date').value = today;
+  document.getElementById('script-url').value = scriptUrl;
+  initRows(10);
+  updateStatus();
+};
+
+function updateStatus() {
+  var dot = document.getElementById('sdot');
+  var txt = document.getElementById('stxt');
+  var banner = document.getElementById('setup-banner');
+  if (scriptUrl) {
+    dot.className = 'status-dot ok';
+    txt.textContent = 'Connected';
+    banner.classList.remove('visible');
+  } else {
+    dot.className = 'status-dot warn';
+    txt.textContent = 'Not connected';
+    banner.classList.add('visible');
+  }
+}
+
+function initRows(n) {
+  document.getElementById('ecl-tbody').innerHTML = '';
+  for (var i = 1; i <= n; i++) { addRow(i); }
+  updateCount();
+}
+
+function addRow(num) {
+  var tbody = document.getElementById('ecl-tbody');
+  var n = num || (tbody.querySelectorAll('tr').length + 1);
+  var today = new Date().toISOString().split('T')[0];
+  var tr = document.createElement('tr');
+  var td0 = document.createElement('td');
+  td0.className = 'num-cell';
+  td0.textContent = n;
+  var td1 = document.createElement('td');
+  td1.className = 'date-cell';
+  var inp1 = document.createElement('input');
+  inp1.type = 'date';
+  inp1.value = today;
+  inp1.addEventListener('change', updateCount);
+  td1.appendChild(inp1);
+  var td2 = document.createElement('td');
+  td2.className = 'cont-cell';
+  var inp2 = document.createElement('input');
+  inp2.type = 'text';
+  inp2.placeholder = 'e.g. CURE99';
+  inp2.addEventListener('change', updateCount);
+  td2.appendChild(inp2);
+  var td3 = document.createElement('td');
+  td3.className = 'notes-cell';
+  var inp3 = document.createElement('input');
+  inp3.type = 'text';
+  inp3.placeholder = 'optional';
+  td3.appendChild(inp3);
+  tr.appendChild(td0);
+  tr.appendChild(td1);
+  tr.appendChild(td2);
+  tr.appendChild(td3);
+  tbody.appendChild(tr);
+  updateCount();
+}
+
+function removeLastRow() {
+  var tbody = document.getElementById('ecl-tbody');
+  var rows = tbody.querySelectorAll('tr');
+  if (rows.length > 1) { rows[rows.length - 1].remove(); updateCount(); }
+}
+
+function updateCount() {
+  var rows = document.querySelectorAll('#ecl-tbody tr');
+  var filled = 0;
+  for (var i = 0; i < rows.length; i++) {
+    var tds = rows[i].querySelectorAll('td');
+    var dateVal = tds[1].querySelector('input').value;
+    var contVal = tds[2].querySelector('input').value.trim();
+    if (dateVal && contVal) filled++;
+  }
+  var el = document.getElementById('row-count');
+  if (filled === 0) el.textContent = '0 eclosions entered';
+  else if (filled === 1) el.textContent = '1 eclosion entered';
+  else el.textContent = filled + ' eclosions entered';
+}
+
+function validate() {
+  var ids = ['sess-date', 'sess-campus', 'sess-temp', 'sess-diet'];
+  var ok = true;
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (!el.value) { el.classList.add('err'); ok = false; }
+    else el.classList.remove('err');
+  }
+  return ok;
+}
+
+function collectRows() {
+  var dateEclosed = document.getElementById('sess-date').value;
+  var campus = document.getElementById('sess-campus').value;
+  var temp = document.getElementById('sess-temp').value;
+  var diet = document.getElementById('sess-diet').value;
+  var observer = document.getElementById('sess-observer').value;
+  var result = [];
+  var rows = document.querySelectorAll('#ecl-tbody tr');
+  for (var i = 0; i < rows.length; i++) {
+    var tds = rows[i].querySelectorAll('td');
+    var datePupated = tds[1].querySelector('input').value;
+    var rawCont = tds[2].querySelector('input').value.trim().toUpperCase().replace(/^CURE/i, '').replace(/\s/g, '');
+    var container = rawCont ? 'CURE' + rawCont : '';
+    var notes = tds[3].querySelector('input').value;
+    if (datePupated && container) {
+      result.push({
+        type: 'eclosion',
+        dateEclosed: dateEclosed,
+        datePupated: datePupated,
+        campus: campus,
+        temp: temp,
+        diet: diet,
+        container: container,
+        observer: observer,
+        rowNotes: notes
+      });
+    }
+  }
+  return result;
+}
+
+function clearForm() {
+  document.getElementById('sess-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('sess-campus').value = '';
+  document.getElementById('sess-temp').value = '';
+  document.getElementById('sess-diet').value = '';
+  document.getElementById('sess-observer').value = '';
+  initRows(10);
+  document.getElementById('local-note').textContent = '';
+}
+
+async function submitForm() {
+  if (!validate()) { showToast('Please fill in all session fields', 'error'); return; }
+  var rows = collectRows();
+  if (rows.length === 0) { showToast('Please enter at least one eclosion', 'error'); return; }
+  var local = JSON.parse(localStorage.getItem('bf_eclosion_local') || '[]');
+  for (var i = 0; i < rows.length; i++) { local.push(rows[i]); }
+  localStorage.setItem('bf_eclosion_local', JSON.stringify(local));
+  var btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Saving...';
+  try {
+    for (var j = 0; j < rows.length; j++) {
+      var resp = await fetch(scriptUrl, { method: 'POST', body: JSON.stringify(rows[j]) });
+      var result = await resp.json();
+      if (!result.success) throw new Error(result.error || 'Unknown error');
+    }
+    showToast('Saved ' + rows.length + ' eclosion(s)!', 'success');
+    clearForm();
+  } catch(err) {
+    showToast('Error saving — check connection', 'error');
+    document.getElementById('local-note').textContent = 'Could not reach Google. Data saved locally.';
+    console.error(err);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Eclosion Data';
+  }
+}
+
+function openSetup() { document.getElementById('modal-bg').classList.add('open'); document.getElementById('script-url').value = scriptUrl; }
+function closeSetup() { document.getElementById('modal-bg').classList.remove('open'); }
+function saveScriptUrl() {
+  var url = document.getElementById('script-url').value.trim();
+  if (!url.startsWith('https://script.google.com')) { document.getElementById('test-result').textContent = 'Does not look like an Apps Script URL.'; return; }
+  scriptUrl = url; localStorage.setItem('bf_eclosion_script_url', url); updateStatus();
+  document.getElementById('test-result').textContent = 'URL saved.';
+}
+
+function showToast(msg, type) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + (type || '');
+  setTimeout(function() { t.className = 'toast'; }, 3500);
+}
+</script>
+</body>
+</html>
